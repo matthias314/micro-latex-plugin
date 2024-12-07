@@ -66,7 +66,7 @@ function get_env(buf, down, loc)
     while level >= 0 do
         local loc1 = down and loc or buf:Start()
         local loc2 = down and buf:End() or loc
-        match, found = buf:FindNextSubmatch("\\\\(begin|end){([[:alpha:]]*\\*?)}", loc1, loc2, loc, down)
+        match, found = buf:FindNextSubmatch("(?-i)\\\\(begin|end){([[:alpha:]]*\\*?)}", loc1, loc2, loc, down)
         if not found then return end
     	local be = get_string(buf, get_loc(match, 3), get_loc(match, 4))
     	level = level + (down and 1 or -1)*(be == "begin" and 1 or -1)
@@ -170,7 +170,7 @@ end
 
 function findall_tags(buf, macro)
     local tags = {}
-    local matches = buf:FindAllSubmatch("\\\\"..macro.."{([^} ]+)}", buf:Start(), buf:End())
+    local matches = buf:FindAllSubmatch("(?-i)\\\\"..macro.."{([^} ]+)}", buf:Start(), buf:End())
     for i = 1, #matches do
         local match = matches[i]
         local loc1, loc2 = get_loc(match, 3), get_loc(match, 4)
@@ -212,7 +212,7 @@ function preAutocomplete(bp)
     if buf:FileType() ~= "tex" or buf.HasSuggestions then return true end
 
     local loc = get_loc(bp.Cursor)
-    local match, found = buf:FindNextSubmatch("\\\\([[:alpha:]]*)(?:\\[[^]]*\\])?{([^} ]*)", buffer.Loc(0, loc.Y), loc, loc, false)
+    local match, found = buf:FindNextSubmatch("(?-i)\\\\([[:alpha:]]*)(?:\\[[^]]*\\])?{([^} ]*)", buffer.Loc(0, loc.Y), loc, loc, false)
     if not found then return true end
     local macro = get_string(buf, get_loc(match, 3), get_loc(match, 4))
     if get_loc(match, 2) ~= get_loc(match, 6) then return true end
@@ -256,7 +256,7 @@ function on_cycle_autocomplete(bp)
     local buf = bp.Buf
     if buf:FileType() == "tex" then
         local loc = get_loc(bp.Cursor)
-        local match, found = buf:FindNextSubmatch("\\\\([[:alpha:]]*)(?:\\[[^]]*\\])?{", buffer.Loc(0, loc.Y), loc, loc, false)
+        local match, found = buf:FindNextSubmatch("(?-i)\\\\([[:alpha:]]*)(?:\\[[^]]*\\])?{", buffer.Loc(0, loc.Y), loc, loc, false)
         if not found then return false end
         local tag = get_string(buf, get_loc(match, 3), get_loc(match, 4))
         if tag == "begin" then
@@ -343,12 +343,12 @@ function compile(bp)
     if err then
         micro.InfoBar():Error("Error compiling ", path)
         logbp = log(bp)
-        local match, found = logbuf:FindNext("^! Emergency stop", logbuf:Start(), logbuf:End(), logbuf:End(), false, true)
+        local match, found = logbuf:FindNext("(?-i)^! Emergency stop", logbuf:Start(), logbuf:End(), logbuf:End(), false, true)
         if found then
             local loc = get_loc(match, 1)
             logbp:GotoLoc(loc)
             logbp:Center()
-            local match, found = logbuf:FindNextSubmatch("^l\.(\\d+)", loc, logbuf:End(), loc, true)
+            local match, found = logbuf:FindNextSubmatch("(?-i)^l\.(\\d+)", loc, logbuf:End(), loc, true)
             if found then
                 local line = get_string(logbuf, get_loc(match, 3), get_loc(match, 4))
                 bp:GotoLoc(buffer.Loc(0, line-1))
