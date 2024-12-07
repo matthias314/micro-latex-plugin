@@ -447,7 +447,7 @@ config.RegisterGlobalOption("latex", "psviewer", nil)
 config.RegisterGlobalOption("latex", "pdfviewer", nil)
 
 -- buffer-local options: access with bp.Buf.Settings["plugin.option"]
-config.RegisterCommonOption("latex", "mode", "pdfdvi")
+config.RegisterCommonOption("latex", "mode", "pdf")
 
 keys = {
     ["a"] = "\\alpha",
