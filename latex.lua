@@ -287,14 +287,16 @@ function change_env(bp, env)
     local buf = bp.Buf
     local env1, loc11, loc12 = get_env(buf, false)
     local env2, loc21, loc22 = get_env(buf, true)
-    if env1 ~= env2 then
+    if not env1 then
+        micro.InfoBar():Error("Malformed environment: no '\\begin' found")
+    elseif not env2 then
+        micro.InfoBar():Error("Malformed environment: no '\\end{", env1, "}' found")
+    elseif env1 ~= env2 then
         micro.InfoBar():Error("Unbalanced environment: '",
             env1, "' (line ", loc12.Y+1, ") ended by '", env2, "' (line ", loc22.Y+1, ")")
-    elseif env1 then
+    else
         bp.Buf:Replace(loc11, loc12, env)
         bp.Buf:Replace(loc21, loc22, env)
-    else
-        micro.InfoBar():Error("Not within an environment")
     end
 end
 
@@ -302,10 +304,14 @@ function change_env_prompt(bp)
     local buf = bp.Buf
     local env1, loc11, loc12 = get_env(buf, false)
     local env2, loc21, loc22 = get_env(buf, true)
-    if env1 ~= env2 then
+    if not env1 then
+        micro.InfoBar():Error("Malformed environment: no '\\begin' found")
+    elseif not env2 then
+        micro.InfoBar():Error("Malformed environment: no '\\end{", env1, "}' found")
+    elseif env1 ~= env2 then
         micro.InfoBar():Error("Unbalanced environment: '",
             env1, "' (line ", loc12.Y+1, ") ended by '", env2, "' (line ", loc22.Y+1, ")")
-    elseif env1 then
+    else
         micro.InfoBar():Prompt("Environment: ", env1, "Latex/Environment", nil,
             function(env, cancel)
                 if not cancel then
@@ -313,8 +319,6 @@ function change_env_prompt(bp)
                     bp.Buf:Replace(loc21, loc22, env)
                 end
             end)
-    else
-        micro.InfoBar():Error("Not within an environment")
     end
 end
 
