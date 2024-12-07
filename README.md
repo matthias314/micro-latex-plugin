@@ -52,7 +52,9 @@ Most of them work only in buffers whose filetype is `tex`.
   ```
    at the current cursor position and places the cursor inside the environment
 - `latex_change_env env`: changes the currently active environment at the cursor position to `env`
+- `latex_compile`: saves and compiles the current buffer with `latexmk`. The output is determined by `latex.mode`
 - `latex_log`: opens the log buffer with the output of `latexmk`
+- `latex_view`: opens the compiled file for the current buffer in a viewer
 
 ### New Lua functions
 
@@ -60,9 +62,9 @@ Most of them work only in buffers whose filetype is `tex`.
 - `latex.insert_env_prompt(bp)`: prompts for an environment and inserts it at the current cursor position
 - `latex.change_env(bp, env)`: analogous to the command `latex_change_env`
 - `latex.change_env_prompt(bp)`: prompts for an environment and changes the current environment to it
-- `latex.compile(bp)`: saves and compiles a LaTeX file with output determined by `latex.mode`
+- `latex.compile(bp)`: analogous to the command `latex_compile`
 - `latex.log(bp)`: analogous to the command `latex_log`
-- `latex.view(bp)`: opens the generated output in a viewer
+- `latex.view(bp)`: analogous to the command `latex_view`
 
 ## Installation
 

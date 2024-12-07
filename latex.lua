@@ -510,7 +510,9 @@ function init()
                 micro.InfoBar():Error("Wrong number of arguments")
             end
         end, nil)
+    config.MakeCommand("latex_compile", function(bp, args) compile(bp) end, nil)
     config.MakeCommand("latex_log", function(bp, args) log(bp) end, nil)
+    config.MakeCommand("latex_view", function(bp, args) view(bp) end, nil)
 
     logbuf = buffer.NewLogBuffer("No log available", "Log-Latexmk")
 end
