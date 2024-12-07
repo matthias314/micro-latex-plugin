@@ -323,22 +323,29 @@ function change_env_prompt(bp)
 end
 
 function log(bp)
-    return bp:HSplitBuf(logbuf)
+    if logbp then
+        return logbp
+    elseif logbuf then
+        logbp = bp:HSplitBuf(logbuf)
+        return logbp
+    else
+        micro.InfoBar():Error("No latexmk log available")
+    end
 end
 
 function compile(bp)
     bp:Save()
-    if logbp then
-        logbp:Quit()
-        logbp = nil
-    end
     local buf = bp.Buf
     local path = buf.Path
     -- micro.InfoBar():Message("Compiling ", path, " ...")
     -- micro.InfoBar():Display()  -- TODO: does this do anything?
     local mode = buf.Settings["latex.mode"]
     local output, err = shell.ExecCommand("latexmk", "-cd", "-"..mode, path)
-    logbuf.EventHandler:Remove(logbuf:Start(), logbuf:End())
+    if logbuf then
+        logbuf.EventHandler:Remove(logbuf:Start(), logbuf:End())
+    else
+        logbuf = buffer.NewLogBuffer("", "Log-Latexmk")
+    end
     logbuf.EventHandler:Insert(logbuf:End(), output)
     if err then
         micro.InfoBar():Error("Error compiling ", path)
@@ -357,8 +364,12 @@ function compile(bp)
         end
         set_bufpane_active(bp)
     else
+        if logbp then
+            logbp:Quit()
+            logbp = nil -- TODO: why is this necessary?
+        end
         micro.InfoBar():Message("Compiled ", path)
-    end    
+    end
 end
 
 function view(bp)
@@ -389,6 +400,12 @@ function onBufferOpen(buf)
         buf.Settings["autoclose.pairs"] = {"()", "{}", "[]", "$$"}
     end
     return true
+end
+
+function onQuit(bp)
+    if bp.Buf == logbuf then
+        logbp = nil
+    end
 end
 
 function preRune(bp, r)
@@ -513,6 +530,4 @@ function init()
     config.MakeCommand("latex_compile", function(bp, args) compile(bp) end, nil)
     config.MakeCommand("latex_log", function(bp, args) log(bp) end, nil)
     config.MakeCommand("latex_view", function(bp, args) view(bp) end, nil)
-
-    logbuf = buffer.NewLogBuffer("No log available", "Log-Latexmk")
 end
