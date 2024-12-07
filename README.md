@@ -103,4 +103,4 @@ You also need to define viewers for PDF and PostScript, see below.
 ### Buffer-local options
 
 - `latex.mode`: the mode that determines the `latexmk` compilation target.
-  Can be `pdf` (default), `pdfdvi`, `ps` or `dvi`, among others. 
+  Can be `pdf` (default), `pdfdvi`, `ps` or `dvi`, among others.

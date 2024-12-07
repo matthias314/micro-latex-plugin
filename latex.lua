@@ -121,7 +121,7 @@ function insert_env(bp, env)
         bp.Cursor = curs[i]
         local cur = bp.Cursor
         local loc1, loc2
-        if cur:HasSelection() then        
+        if cur:HasSelection() then
             loc1 = get_loc(cur.CurSelection, 1)
             bp:IndentSelection()
             loc2 = get_loc(cur.CurSelection, 2)
@@ -138,12 +138,12 @@ function insert_env(bp, env)
         bp:Insert("\\end{"..env.."}")
         bp:GotoLoc(loc1)
         bp:Insert("\\begin{"..env.."}")
-        bp:InsertNewline()        
+        bp:InsertNewline()
         bp:GotoLoc(buffer.Loc(loc2.X, loc2.Y+1))
         bp:Insert("@")
         -- micro.TermMessage(loc2, cur.Loc)
         -- bp:CursorUp()
-        -- bp:EndOfLine()        
+        -- bp:EndOfLine()
     end
 end
 --]]
