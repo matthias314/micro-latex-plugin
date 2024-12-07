@@ -358,8 +358,10 @@ function compile(bp)
             local match, found = logbuf:FindNextSubmatch("(?-i)^l\.(\\d+)", loc, logbuf:End(), loc, true)
             if found then
                 local line = get_string(logbuf, get_loc(match, 3), get_loc(match, 4))
-                bp:GotoLoc(buffer.Loc(0, line-1))
-                bp:Center()
+                if line-1 ~= bp.Cursor.Loc.Y then
+                    bp:GotoLoc(buffer.Loc(0, line-1))
+                    bp:Center()
+                end
             end
         end
         set_bufpane_active(bp)
