@@ -452,22 +452,6 @@ function onRune(bp, r)
     return false
 end
 
--- global options: access with config.GetGlobalOption("plugin.option")
-config.RegisterGlobalOption("latex", "smartbraces", true)
-config.RegisterGlobalOption("latex", "smartquotes", true)
-config.RegisterGlobalOption("latex", "keymod", "Alt")
-config.RegisterGlobalOption("latex", "refmacros", {"ref", "eqref", "cref", "Cref"})
--- \cref and \Cref are from cleveref
-config.RegisterGlobalOption("latex", "citemacros", {"cite", "textcite", "parencite"})
-config.RegisterGlobalOption("latex", "bibmacros", {"addbibresource", "addglobalbib", "addsectionbib", "bibliography"})
--- \textcite and \parencite are from biblatex
-config.RegisterGlobalOption("latex", "dviviewer", "xdvi")
-config.RegisterGlobalOption("latex", "psviewer", nil)
-config.RegisterGlobalOption("latex", "pdfviewer", nil)
-
--- buffer-local options: access with bp.Buf.Settings["plugin.option"]
-config.RegisterCommonOption("latex", "mode", "pdf")
-
 keys = {
     ["a"] = "\\alpha",
     ["b"] = "\\beta",
@@ -509,6 +493,24 @@ keys = {
     ["-"] = "\\ominus",
     ["*"] = "\\otimes",
 }
+
+function preinit()
+    -- global options: access with config.GetGlobalOption("plugin.option")
+    config.RegisterGlobalOption("latex", "smartbraces", true)
+    config.RegisterGlobalOption("latex", "smartquotes", true)
+    config.RegisterGlobalOption("latex", "keymod", "Alt")
+    config.RegisterGlobalOption("latex", "refmacros", {"ref", "eqref", "cref", "Cref"})
+    -- \cref and \Cref are from cleveref
+    config.RegisterGlobalOption("latex", "citemacros", {"cite", "textcite", "parencite"})
+    config.RegisterGlobalOption("latex", "bibmacros", {"addbibresource", "addglobalbib", "addsectionbib", "bibliography"})
+    -- \textcite and \parencite are from biblatex
+    config.RegisterGlobalOption("latex", "dviviewer", "xdvi")
+    config.RegisterGlobalOption("latex", "psviewer", nil)
+    config.RegisterGlobalOption("latex", "pdfviewer", nil)
+
+    -- buffer-local options: access with bp.Buf.Settings["plugin.option"]
+    config.RegisterCommonOption("latex", "mode", "pdf")
+end
 
 function init()
     local mod = config.GetGlobalOption("latex.keymod")
