@@ -16,7 +16,7 @@ Most of them work only in buffers whose filetype is `tex`.
 - Greek letters are bound to keys like `Alt-a` for `\alpha` or `Alt-L` for `\Lambda`.
   The modifier can be configured, see below.
 -  Entering `"` inserts  ``` `` ``` or `''`, depending on the context.
-- Autoclosing of brackets is extended to `\(...\)`, `\[...\]` and `$...$`.
+- Autoclosing of brackets is extended to `\(...\)`, `\[...\]`, `$...$` and `` `...' ``.
 
 ### Autocompletion
 
