@@ -391,7 +391,7 @@ function view(bp)
         prog = config.GetGlobalOption("latex.dviviewer")
     end
     if path then
-        shell.JobSpawn(prog, {path}, nil, nil, nil)
+        shell.JobStart(prog.." "..path, nil, nil, nil)
     else
         micro.InfoBar():Error("File name not supported")
     end
