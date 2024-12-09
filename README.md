@@ -4,12 +4,15 @@ This repository contains a plugin
 for the [micro](https://github.com/zyedidia/micro) editor
 that makes it easier to write LaTeX files.
 
+**A custom version of micro is currently required,
+see the installation instructions below.
+Also note that this package is under development.
+Everything can change at any time.**
+
 ## Functionality
 
-**This package is under development. Everything can change at any time.**
-
 At present, this plugin provides the following functionality.
-Most of them work only in buffers whose filetype is `tex`.
+Many things work only in buffers whose filetype is `tex`.
 
 ### Keybindings
 
@@ -32,6 +35,7 @@ Most of them work only in buffers whose filetype is `tex`.
 ### Compilation
 
   - The LaTeX file can be compiled with `latexmk` and afterwards viewed.
+    You may want to bind the corresponding commands (see below) to some keys.
   - If an error occurs, then the output of `latexmk` will be displayed, and the cursor
     will be placed on the line of the LaTeX file where the error occurred.
 
@@ -44,7 +48,7 @@ Most of them work only in buffers whose filetype is `tex`.
     ```
         bind F1 "command:insert '\\section'"
     ```
-    (At present, the `insert` command is defined in the custom version of micro
+    (The `insert` command is defined in the custom version of micro
     used by this plugin, see the installation instructions below.)
   - `latex_insert_env 'env'`: inserts
     ```
@@ -52,10 +56,12 @@ Most of them work only in buffers whose filetype is `tex`.
 
     \end{env}
     ```
-    at the current cursor position and places the cursor inside the environment
+    at the current cursor position and places the cursor inside the environment.
+    If a selection is defined, then it is replaced by the inserted text.
   - `latex_change_env 'env'`: changes the currently active environment at the cursor position to `env`
-  - `latex_compile`: saves and compiles the current buffer with `latexmk`. The output is determined by `latex.mode`
-  - `latex_log`: opens the log buffer with the output of `latexmk`
+  - `latex_compile`: saves and compiles the current buffer with `latexmk`.
+    The output is determined by the option `latex.mode`, see below.
+  - `latex_log`: opens a log buffer containing the output of `latexmk`
   - `latex_view`: opens the compiled file for the current buffer in a viewer
 
 ### New Lua functions
@@ -72,8 +78,9 @@ Most of them work only in buffers whose filetype is `tex`.
 
 **NOTE:**
 At present, this plugin requires some special functionality not included
-in the official version of micro. It only runs with the `m3/latex` branch
-of the fork [matthias314/micro](https://github.com/matthias314/micro).
+in the official version of micro. It only runs with the
+[`m3/latex`](https://github.com/matthias314/micro/tree/m3/latex) branch
+in the forked repository [matthias314/micro](https://github.com/matthias314/micro).
 
 Create a directory `~/.config/micro/plug/latex` and store the file `latex.lua` there.
 Alternatively, clone this repository into such a directory,
@@ -89,16 +96,16 @@ You also need to define viewers for PDF and PostScript, see below.
 ### Global options
 
   - `latex.smartbraces`: if `true` (default), insert `{}` after `^` and `_`
-  - `latex.smartquotes`: if `true` (default), change `"` to ``` `` ``` and `''`.
+  - `latex.smartquotes`: if `true` (default), change `"` to ``` `` ``` or `''`, depending on the context.
   - `latex.keymod`: the modifier or key used for keybindings,
-    for example `Alt` (default), `Alt` (modifier) or `<Shift-F2>` (key, with `<` and `>`)
+    for example `Alt` (modifier, default) or `<Shift-F2>` (key, with `<` and `>`)
   - `latex.refmacros`: the list of macros that trigger autocompletion of labels.
     Default value is `{"ref", "eqref", "cref", "Cref"}`.
-  - `latex.citemacros`: the list of macro that trigger autocompletion of bibliographic references.
+  - `latex.citemacros`: the list of macros that trigger autocompletion of bibliographic references.
     Default value is `{"cite", "textcite", "parencite"}`.
-  - `latex.bibmacros`: the list of macro names that define databases with bibliographic references.
+  - `latex.bibmacros`: the list of macros that define databases with bibliographic references.
     Default value is `{"addbibresource", "addglobalbib", "addsectionbib", "bibliography"}`.
-  - `latex.dviviewer`: the program used for viewing DVI files. Default value is `xdvi`.
+  - `latex.dviviewer`: the program used for viewing DVI files. Default value is `"xdvi"`.
   - `latex.psviewer`: the program used for viewing PostScript files. No default value.
   - `latex.pdfviewer`: the program used for viewing PDF files. No default value.
 
