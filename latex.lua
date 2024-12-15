@@ -401,13 +401,13 @@ function onBufferOpen(buf)
     if buf:FileType() == "tex" then
         buf.Settings["autoclose.pairs"] = {"()", "{}", "[]", "$$", "`'"}
     end
-    return true
 end
 
 function onQuit(bp)
     if bp.Buf == logbuf then
         logbp = nil
     end
+    return true
 end
 
 function preRune(bp, r)
@@ -444,12 +444,10 @@ end
 
 function onRune(bp, r)
     local buf = bp.Buf
-    if buf:FileType() ~= "tex" then return true end
-    if config.GetGlobalOption("latex.smartbraces") and (r == "^" or r == "_") then
+    if buf:FileType() == "tex" and config.GetGlobalOption("latex.smartbraces") and (r == "^" or r == "_") then
         bp:Insert("{}")
         bp:CursorLeft()
     end
-    return false
 end
 
 keys = {
