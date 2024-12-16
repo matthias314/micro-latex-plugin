@@ -186,7 +186,8 @@ function findall_tags(buf, macro)
 end
 
 function change_env_end(buf, loc, newenv)
-    local _, loc1, loc2 = get_env(buf, true, loc)
+    local env, loc1, loc2 = get_env(buf, true, loc)
+    if not env then return end
     buf:Remove(loc1, loc2)
     buf:Insert(loc1, newenv)
 end
@@ -213,11 +214,10 @@ function preAutocomplete(bp)
 
     local loc = get_loc(bp.Cursor)
     local match, found = buf:FindNextSubmatch("(?-i)\\\\([[:alpha:]]*)(?:\\[[^]]*\\])?{([^} ]*)", buffer.Loc(0, loc.Y), loc, loc, false)
-    if not found then return true end
+    if not found or get_loc(match, 2) ~= loc then return true end
     local macro = get_string(buf, get_loc(match, 3), get_loc(match, 4))
-    if get_loc(match, 2) ~= get_loc(match, 6) then return true end
 
-    local tags
+    local tags = {}
     if macro == "begin" then
         tags = findall_tags(buf, "end")
     elseif findfirst(config.GetGlobalOption("latex.refmacros"), macro) then
@@ -228,7 +228,6 @@ function preAutocomplete(bp)
         if #bibs == 0 then
             tags = findall_tags(buf, "bibitem")
         else
-            tags = {}
             for i = 1, #bibs do
                 err = insert_bibtags(tags, bibs[i])
                 if err then
@@ -240,13 +239,15 @@ function preAutocomplete(bp)
         end
     end
 
-    -- TODO: this is a hack
-	buf.Completions, buf.Suggestions = completer(tags)(buf)
-	buf.CurSuggestion = -1
-	buf.HasSuggestions = true
-
-    if macro == "begin" and #buf.Suggestions ~= 0 then
-        change_env_end(buf, loc, suggestions[1])
+    completions, suggestions = completer(tags)(buf)
+    if #suggestions > 0 then
+        if macro == "begin" then
+            change_env_end(buf, loc, suggestions[1])
+        end
+        -- TODO: this is a hack
+        buf.Completions, buf.Suggestions = completions, suggestions
+        buf.HasSuggestions = true
+        buf.CurSuggestion = -1
     end
 
 	return true
