@@ -356,7 +356,7 @@ function compile(bp)
             local loc = get_loc(match, 1)
             logbp:GotoLoc(loc)
             logbp:Center()
-            local match, found = logbuf:FindNextSubmatch("(?-i)^l\.(\\d+)", loc, logbuf:End(), loc, true)
+            local match, found = logbuf:FindNextSubmatch("(?-i)^l\\.(\\d+)", loc, logbuf:End(), loc, true)
             if found then
                 local line = get_string(logbuf, get_loc(match, 3), get_loc(match, 4))
                 if line-1 ~= bp.Cursor.Loc.Y then
