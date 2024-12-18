@@ -23,6 +23,8 @@ Many things work only in buffers whose filetype is `tex`.
 
 ### Autocompletion
 
+  - When you press `TAB` after `\` followed by letters, the partial macro name is
+    autocompleted based on the macros used in the file.
   - When you press `TAB` at the end of the argument to `\ref{}`, it is autocompleted
     based on the labels defined in the file (with `\label{}`).
     This also works for some other macros besides `\ref`, see below.
