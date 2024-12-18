@@ -148,12 +148,12 @@ function insert_env(bp, env)
 end
 --]]
 
-function completer(tags)
+function completer(tags, r)
     return function(buf)
         local raw = buf:GetArg()
         local input = ""
         for i = 1, #raw do
-            if string.sub(raw, i, i) == "{" then
+            if string.sub(raw, i, i) == r then
                 input = string.sub(raw, i+1, -1)
             end
         end
@@ -168,21 +168,32 @@ function completer(tags)
     end
 end
 
-function findall_tags(buf, macro)
-    local tags = {}
-    local matches = buf:FindAllSubmatch("(?-i)\\\\"..macro.."{([^} ]+)}", buf:Start(), buf:End())
+function findall_submatch(buf, regexp)
+    local curloc = -buf:GetActiveCursor().Loc -- dereference
+    local submatches = {}
+    local matches = buf:FindAllSubmatch(regexp, buf:Start(), buf:End())
     for i = 1, #matches do
         local match = matches[i]
-        local loc1, loc2 = get_loc(match, 3), get_loc(match, 4)
-        local j = findfirst(buf:LineBytes(loc1.Y), 37) -- string.char(37) == "%"
-        if not j or j > loc1.X then
+        local loc0, loc1, loc2 = get_loc(match, 2), get_loc(match, 3), get_loc(match, 4)
+        -- local j = findfirst(buf:LineBytes(loc1.Y), 37) -- string.char(37) == "%"
+        if (loc0 ~= curloc) then -- and (not j or j > loc1.X) then
             -- we are probably not inside a comment
-	        local tag = get_string(buf, loc1, loc2)
-            table.insert(tags, tag)
+            local submatch = get_string(buf, loc1, loc2)
+            table.insert(submatches, submatch)
         end
     end
-    sort_unique(tags)
-    return tags
+    sort_unique(submatches)
+    return submatches
+end
+
+function findall_macros(buf)
+    local regexp = "(?-i)\\\\([[:alpha:]]+)"
+    return findall_submatch(buf, regexp)
+end
+
+function findall_tags(buf, macro)
+    local regexp = "(?-i)\\\\"..macro.."{([^} ]+)}"
+    return findall_submatch(buf, regexp)
 end
 
 function change_env_end(buf, loc, newenv)
@@ -213,36 +224,45 @@ function preAutocomplete(bp)
     if buf:FileType() ~= "tex" or buf.HasSuggestions then return true end
 
     local loc = get_loc(bp.Cursor)
-    local match, found = buf:FindNextSubmatch("(?-i)\\\\([[:alpha:]]*)(?:\\[[^]]*\\])?{([^} ]*)", buffer.Loc(0, loc.Y), loc, loc, false)
-    if not found or get_loc(match, 2) ~= loc then return true end
-    local macro = get_string(buf, get_loc(match, 3), get_loc(match, 4))
+    local macro, tags, r
 
-    local tags = {}
-    if macro == "begin" then
-        tags = findall_tags(buf, "end")
-    elseif findfirst(config.GetGlobalOption("latex.refmacros"), macro) then
-        tags = findall_tags(buf, "label")
-    elseif findfirst(config.GetGlobalOption("latex.citemacros"), macro) then
-        local bibre = "(?:"..concat(config.GetGlobalOption("latex.bibmacros"), "|")..")"
-        local bibs = findall_tags(buf, bibre)
-        if #bibs == 0 then
-            tags = findall_tags(buf, "bibitem")
-        else
-            for i = 1, #bibs do
-                err = insert_bibtags(tags, bibs[i])
-                if err then
-                    micro.InfoBar():Error("Error reading bib file "..bibs[i]..": "..err:Error())
-                    return false
+    match, found = buf:FindNextSubmatch("(?-i)\\\\([[:alpha:]]*)((?:\\[[^]]*\\])?{[^}\\ ]*|)", buffer.Loc(0, loc.Y), loc, loc, false)
+    if not found or get_loc(match, 2) ~= loc then return true end
+
+    if get_loc(match, 5) == get_loc(match, 6) then -- macro
+        r = "\\"
+        tags = findall_macros(buf)
+    else -- tag
+        r = "{"
+        macro = get_string(buf, get_loc(match, 3), get_loc(match, 4))
+
+        if macro == "begin" then
+            tags = findall_tags(buf, "end")
+        elseif findfirst(config.GetGlobalOption("latex.refmacros"), macro) then
+            tags = findall_tags(buf, "label")
+        elseif findfirst(config.GetGlobalOption("latex.citemacros"), macro) then
+            local bibre = "(?:"..concat(config.GetGlobalOption("latex.bibmacros"), "|")..")"
+            local bibs = findall_tags(buf, bibre)
+            if #bibs == 0 then
+                tags = findall_tags(buf, "bibitem")
+            else
+                tags = {}
+                for i = 1, #bibs do
+                    err = insert_bibtags(tags, bibs[i])
+                    if err then
+                        micro.InfoBar():Error("Error reading bib file "..bibs[i]..": "..err:Error())
+                        return false
+                    end
                 end
+                sort_unique(tags)
             end
-            sort_unique(tags)
         end
     end
 
-    completions, suggestions = completer(tags)(buf)
+    completions, suggestions = completer(tags, r)(buf)
     if #suggestions > 0 then
         if macro == "begin" then
-            change_env_end(buf, loc, suggestions[1])
+            buf.Settings["latex.envs"] = suggestions
         end
         -- TODO: this is a hack
         buf.Completions, buf.Suggestions = completions, suggestions
@@ -251,6 +271,34 @@ function preAutocomplete(bp)
     end
 
 	return true
+end
+
+-- compare a Lua list with a Go list
+function list_equal(v, w)
+    if #v ~= #w then return false end
+    for i = 1, #v do
+        if v[i] ~= w[i] then return false end
+    end
+    return true
+end
+
+function on_cycle_autocomplete(bp)
+    local buf, loc = bp.Buf, -bp.Cursor.Loc -- dereference
+    local envs = buf.Settings["latex.envs"]
+    if envs and buf.HasSuggestions and list_equal(buf.Suggestions, envs) then
+        local env = buf.Suggestions[buf.CurSuggestion+1]
+        change_env_end(buf, loc, env)
+        buf.HasSuggestions = true
+    end
+    return true
+end
+
+function onAutocomplete(bp)
+    return on_cycle_autocomplete(bp)
+end
+
+function onCycleAutocompleteBack(bp)
+    return on_cycle_autocomplete(bp)
 end
 
 function insert_env_prompt(bp)
