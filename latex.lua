@@ -253,30 +253,6 @@ function preAutocomplete(bp)
 	return true
 end
 
-function on_cycle_autocomplete(bp)
-    local buf = bp.Buf
-    if buf:FileType() == "tex" then
-        local loc = get_loc(bp.Cursor)
-        local match, found = buf:FindNextSubmatch("(?-i)\\\\([[:alpha:]]*)(?:\\[[^]]*\\])?{", buffer.Loc(0, loc.Y), loc, loc, false)
-        if not found then return false end
-        local tag = get_string(buf, get_loc(match, 3), get_loc(match, 4))
-        if tag == "begin" then
-            local input = buf.Suggestions[buf.CurSuggestion+1]
-            change_env_end(buf, loc, input)
-            buf.HasSuggestions = true
-        end
-    end
-    return true
-end
-
-function onAutocomplete(bp)
-    return on_cycle_autocomplete(bp)
-end
-
-function onCycleAutocompleteBack(bp)
-    return on_cycle_autocomplete(bp)
-end
-
 function insert_env_prompt(bp)
     micro.InfoBar():Prompt("Environment: ", "", "Latex/Environment", nil,
         function(env, cancel)
