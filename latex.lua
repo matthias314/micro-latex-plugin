@@ -1,5 +1,11 @@
 -- micro editor plugin for LaTeX support
 
+--[[ from https://pkg.go.dev/layeh.com/gopher-luar#New
+Pointer values can be compared for equality. The pointed to value can be
+changed using the pow operator (pointer = pointer ^ value). A pointer can
+be dereferenced using the unary minus operator (value = -pointer).
+--]]
+
 errors = import("errors")
 
 micro = import("micro")
@@ -40,13 +46,6 @@ function replace_suffix(s, oldsuffix, newsuffix)
     end
 end
 
-function get_loc(v, i)
--- if i is nil, then v is a Cursor
--- otherwise v is a list of buffer.Loc's and i is the desired position
-    local loc = i and v[i] or v.Loc
-    return buffer.Loc(loc.X, loc.Y)
-end
-
 function get_string(buf, loc1, loc2)
     return util.String(buf:Substr(loc1, loc2))
 end
@@ -59,7 +58,7 @@ end
 
 function get_env(buf, down, loc)
     if not loc then
-        loc = -buf:GetActiveCursor().Loc -- dereference
+        loc = -buf:GetActiveCursor().Loc
     end
     local level = 0, match, found
     while level >= 0 do
@@ -67,11 +66,11 @@ function get_env(buf, down, loc)
         local loc2 = down and buf:End() or loc
         match, found = buf:FindNextSubmatch("(?-i)\\\\(begin|end){([[:alpha:]]*\\*?)}", loc1, loc2, loc, down)
         if not found then return end
-        local be = get_string(buf, get_loc(match, 3), get_loc(match, 4))
+        local be = get_string(buf, -match[3], -match[4])
         level = level + (down and 1 or -1)*(be == "begin" and 1 or -1)
-        loc = get_loc(match, down and 2 or 1)
+        loc = -match[down and 2 or 1]
     end
-    local loc1, loc2 = get_loc(match, 5), get_loc(match, 6)
+    local loc1, loc2 = -match[5], -match[6]
     return get_string(buf, loc1, loc2), loc1, loc2
 end
 
@@ -82,9 +81,7 @@ function insert_env(bp, env)
         local cur = bp.Cursor
         local sel
         if cur:HasSelection() then
-            local loc1 = get_loc(cur.CurSelection, 1)
-            local loc2 = get_loc(cur.CurSelection, 2)
-            sel = get_string(bp.Buf, loc1, loc2)
+            sel = get_string(bp.Buf, -cur.CurSelection[1], -cur.CurSelection[2])
             cur:DeleteSelection()
         end
         bp:Insert("\\begin{"..env.."}")
@@ -94,9 +91,9 @@ function insert_env(bp, env)
         bp:EndOfLine()
         bp:InsertNewline()
         if sel then
-            local loc1 = -cur.Loc -- dereference
+            local loc1 = -cur.Loc
             bp:Insert(sel)
-            local loc2 = -cur.Loc -- dereference
+            local loc2 = -cur.Loc
             bp.Cursor:SetSelectionStart(loc1)
             bp.Cursor:SetSelectionEnd(loc2)
             bp:IndentSelection()
@@ -168,12 +165,12 @@ function completer(tags, r)
 end
 
 function findall_submatch(buf, regexp)
-    local curloc = -buf:GetActiveCursor().Loc -- dereference
+    local curloc = -buf:GetActiveCursor().Loc
     local submatches = {}
     local matches = buf:FindAllSubmatch(regexp, buf:Start(), buf:End())
     for i = 1, #matches do
         local match = matches[i]
-        local loc0, loc1, loc2 = get_loc(match, 2), get_loc(match, 3), get_loc(match, 4)
+        local loc0, loc1, loc2 = -match[2], -match[3], -match[4]
         -- local j = findfirst(buf:LineBytes(loc1.Y), 37) -- string.char(37) == "%"
         if (loc0 ~= curloc) then -- and (not j or j > loc1.X) then
             -- we are probably not inside a comment
@@ -212,7 +209,7 @@ function insert_bibtags(tags, bibfile)
     local matches = buf:FindAllSubmatch("^@[[:alnum:]]+{([^\"#%'(),={}]+),", buf:Start(), buf:End())
     for i = 1, #matches do
         local match = matches[i]
-	    local tag = get_string(buf, get_loc(match, 3), get_loc(match, 4))
+        local tag = get_string(buf, -match[3], -match[4])
         table.insert(tags, tag)
     end
     buf:Close()
@@ -222,18 +219,18 @@ function preAutocomplete(bp)
     local buf = bp.Buf
     if buf:FileType() ~= "tex" or buf.HasSuggestions then return true end
 
-    local loc = -bp.Cursor.Loc -- dereference
+    local loc = -bp.Cursor.Loc
     local macro, tags, r
 
     match, found = buf:FindNextSubmatch("(?-i)\\\\([[:alpha:]]*)((?:\\[[^]]*\\])?{[^}\\ ]*|)", buffer.Loc(0, loc.Y), loc, loc, false)
-    if not found or get_loc(match, 2) ~= loc then return true end
+    if not found or -match[2] ~= loc then return true end
 
-    if get_loc(match, 5) == get_loc(match, 6) then -- macro
+    if -match[5] == -match[6] then -- macro
         r = "\\"
         tags = findall_macros(buf)
     else -- tag
         r = "{"
-        macro = get_string(buf, get_loc(match, 3), get_loc(match, 4))
+        macro = get_string(buf, -match[3], -match[4])
 
         if macro == "begin" then
             tags = findall_tags(buf, "end")
@@ -282,7 +279,7 @@ function list_equal(v, w)
 end
 
 function on_cycle_autocomplete(bp)
-    local buf, loc = bp.Buf, -bp.Cursor.Loc -- dereference
+    local buf, loc = bp.Buf, -bp.Cursor.Loc
     local envs = buf.Settings["latex.envs"]
     if envs and buf.HasSuggestions and list_equal(buf.Suggestions, envs) then
         local env = buf.Suggestions[buf.CurSuggestion+1]
@@ -376,12 +373,12 @@ function compile(bp)
         logbp = log(bp)
         local match, found = logbuf:FindNext("(?-i)^! Emergency stop", logbuf:Start(), logbuf:End(), logbuf:End(), false, true)
         if found then
-            local loc = get_loc(match, 1)
+            local loc = match[1]
             logbp:GotoLoc(loc)
             logbp:Center()
             local match, found = logbuf:FindNextSubmatch("(?-i)^l\\.(\\d+)", loc, logbuf:End(), loc, true)
             if found then
-                local line = get_string(logbuf, get_loc(match, 3), get_loc(match, 4))
+                local line = get_string(logbuf, -match[3], -match[4])
                 if line-1 ~= bp.Cursor.Loc.Y then
                     bp:GotoLoc(buffer.Loc(0, line-1))
                     bp:Center()
