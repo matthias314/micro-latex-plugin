@@ -59,17 +59,16 @@ end
 
 function get_env(buf, down, loc)
     if not loc then
-        local cur = buf:GetActiveCursor()
-        loc = get_loc(cur)
+        loc = -buf:GetActiveCursor().Loc -- dereference
     end
-	local level = 0, match, found
+    local level = 0, match, found
     while level >= 0 do
         local loc1 = down and loc or buf:Start()
         local loc2 = down and buf:End() or loc
         match, found = buf:FindNextSubmatch("(?-i)\\\\(begin|end){([[:alpha:]]*\\*?)}", loc1, loc2, loc, down)
         if not found then return end
-    	local be = get_string(buf, get_loc(match, 3), get_loc(match, 4))
-    	level = level + (down and 1 or -1)*(be == "begin" and 1 or -1)
+        local be = get_string(buf, get_loc(match, 3), get_loc(match, 4))
+        level = level + (down and 1 or -1)*(be == "begin" and 1 or -1)
         loc = get_loc(match, down and 2 or 1)
     end
     local loc1, loc2 = get_loc(match, 5), get_loc(match, 6)
@@ -95,9 +94,9 @@ function insert_env(bp, env)
         bp:EndOfLine()
         bp:InsertNewline()
         if sel then
-            local loc1 = get_loc(cur)
+            local loc1 = -cur.Loc -- dereference
             bp:Insert(sel)
-            local loc2 = get_loc(cur)
+            local loc2 = -cur.Loc -- dereference
             bp.Cursor:SetSelectionStart(loc1)
             bp.Cursor:SetSelectionEnd(loc2)
             bp:IndentSelection()
@@ -223,7 +222,7 @@ function preAutocomplete(bp)
     local buf = bp.Buf
     if buf:FileType() ~= "tex" or buf.HasSuggestions then return true end
 
-    local loc = get_loc(bp.Cursor)
+    local loc = -bp.Cursor.Loc -- dereference
     local macro, tags, r
 
     match, found = buf:FindNextSubmatch("(?-i)\\\\([[:alpha:]]*)((?:\\[[^]]*\\])?{[^}\\ ]*|)", buffer.Loc(0, loc.Y), loc, loc, false)
@@ -270,7 +269,7 @@ function preAutocomplete(bp)
         buf.CurSuggestion = -1
     end
 
-	return true
+    return true
 end
 
 -- compare a Lua list with a Go list
@@ -436,9 +435,8 @@ function onQuit(bp)
 end
 
 function preRune(bp, r)
-    local buf = bp.Buf
+    local buf, cur = bp.Buf, bp.Cursor
     if buf:FileType() ~= "tex" then return true end
-    local cur = get_loc(bp.Cursor)
     if r == "\""  and config.GetGlobalOption("latex.smartquotes") then
         local rune = cur.X == 0 and " " or util.RuneAt(buf:Line(cur.Y), cur.X-1)
         if rune == "\\" then
