@@ -216,10 +216,10 @@ function insert_bibtags(tags, bibfile)
 end
 
 function preAutocomplete(bp)
-    local buf = bp.Buf
-    if buf:FileType() ~= "tex" or buf.HasSuggestions then return true end
+    local buf, cur = bp.Buf, bp.Cursor
+    if buf:FileType() ~= "tex" or cur:HasSelection() or buf.HasSuggestions then return true end
 
-    local loc = -bp.Cursor.Loc
+    local loc = -cur.Loc
     local macro, tags, r
 
     match, found = buf:FindNextSubmatch("(?-i)\\\\([[:alpha:]]*)((?:\\[[^]]*\\])?{[^}\\ ]*|)", buffer.Loc(0, loc.Y), loc, loc, false)
