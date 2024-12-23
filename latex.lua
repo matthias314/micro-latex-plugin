@@ -4,6 +4,9 @@
 Pointer values can be compared for equality. The pointed to value can be
 changed using the pow operator (pointer = pointer ^ value). A pointer can
 be dereferenced using the unary minus operator (value = -pointer).
+
+Calling an array, slice or map returns an iterator over the elements,
+analogous to ipairs and pairs.
 --]]
 
 errors = import("errors")
@@ -76,9 +79,8 @@ end
 
 function insert_env(bp, env)
     curs = bp.Buf:GetCursors()
-    for i = 1, #curs do
-        bp.Cursor = curs[i]
-        local cur = bp.Cursor
+    for _, cur in curs() do
+        bp.Cursor = cur
         local sel
         if cur:HasSelection() then
             sel = get_string(bp.Buf, -cur.CurSelection[1], -cur.CurSelection[2])
@@ -168,8 +170,7 @@ function findall_submatch(buf, regexp)
     local curloc = -buf:GetActiveCursor().Loc
     local submatches = {}
     local matches = buf:FindAllSubmatch(regexp, buf:Start(), buf:End())
-    for i = 1, #matches do
-        local match = matches[i]
+    for _, match in matches() do
         local loc0, loc1, loc2 = -match[2], -match[3], -match[4]
         -- local j = findfirst(buf:LineBytes(loc1.Y), 37) -- string.char(37) == "%"
         if (loc0 ~= curloc) then -- and (not j or j > loc1.X) then
@@ -207,8 +208,7 @@ function insert_bibtags(tags, bibfile)
         return errors.New("file empty or non-existing")
     end
     local matches = buf:FindAllSubmatch("^@[[:alnum:]]+{([^\"#%'(),={}]+),", buf:Start(), buf:End())
-    for i = 1, #matches do
-        local match = matches[i]
+    for _, match in matches() do
         local tag = get_string(buf, -match[3], -match[4])
         table.insert(tags, tag)
     end
@@ -450,9 +450,9 @@ function preRune(bp, r)
             return false
         end
         autoclosePairs = buf.Settings["autoclose.pairs"]
-        for i = 1, #autoclosePairs do
-            if r == util.RuneAt(autoclosePairs[i], 0) then
-                bp:Insert(r.."\\"..util.RuneAt(autoclosePairs[i], 1))
+        for _, pair in autoclosePairs() do
+            if r == util.RuneAt(pair, 0) then
+                bp:Insert(r.."\\"..util.RuneAt(pair, 1))
                 bp:CursorLeft()
                 bp:CursorLeft()
                 return false
@@ -538,8 +538,8 @@ function init()
     end
 
     config.MakeCommand("latex_insert_env", function(bp, args)
-            for i = 1, #args do
-                insert_env(bp, args[i])
+            for _, arg in args() do
+                insert_env(bp, arg)
             end
         end, completer(envs))
     config.MakeCommand("latex_change_env", function(bp, args)
