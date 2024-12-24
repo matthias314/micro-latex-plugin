@@ -10,6 +10,7 @@ analogous to ipairs and pairs.
 --]]
 
 errors = import("errors")
+filepath = import("path/filepath")
 
 micro = import("micro")
 config = import("micro/config")
@@ -47,6 +48,10 @@ function replace_suffix(s, oldsuffix, newsuffix)
     if string.sub(s, -#oldsuffix-1, -1) == "."..oldsuffix then
         return string.sub(s, 1, -#oldsuffix-1)..newsuffix
     end
+end
+
+function getAbsPath(buf, file)
+    return filepath.IsAbs(file) and file or filepath.Join(filepath.Dir(buf.AbsPath), file)
 end
 
 function get_string(buf, loc1, loc2)
@@ -244,7 +249,7 @@ function preAutocomplete(bp)
             else
                 tags = {}
                 for _, bib in pairs(bibs) do
-                    if insert_bibtags(tags, bib) then
+                    if insert_bibtags(tags, getAbsPath(buf, bib)) then
                         micro.InfoBar():Error("Error reading bib file "..bib..": "..err:Error())
                         return false
                     end
