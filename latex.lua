@@ -243,10 +243,9 @@ function preAutocomplete(bp)
                 tags = findall_tags(buf, "bibitem")
             else
                 tags = {}
-                for i = 1, #bibs do
-                    err = insert_bibtags(tags, bibs[i])
-                    if err then
-                        micro.InfoBar():Error("Error reading bib file "..bibs[i]..": "..err:Error())
+                for _, bib in pairs(bibs) do
+                    if insert_bibtags(tags, bib) then
+                        micro.InfoBar():Error("Error reading bib file "..bib..": "..err:Error())
                         return false
                     end
                 end
