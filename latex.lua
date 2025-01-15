@@ -83,7 +83,7 @@ function get_env(buf, down, loc)
 end
 
 function insert_env(bp, env)
-    curs = bp.Buf:GetCursors()
+    local curs = bp.Buf:GetCursors()
     for _, cur in curs() do
         bp.Cursor = cur
         local sel
@@ -119,7 +119,7 @@ end
 
 --[[
 function insert_env(bp, env)
-    curs = bp.Buf:GetCursors()
+    local curs = bp.Buf:GetCursors()
     for i = 1, #curs do
         bp.Cursor = curs[i]
         local cur = bp.Cursor
