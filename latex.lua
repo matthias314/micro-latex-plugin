@@ -64,6 +64,19 @@ function set_bufpane_active(bp)
     tab:SetActive(pane)
 end
 
+function insert_brackets(bp, left, right)
+    local curs = bp.Buf:GetCursors()
+    for _, cur in curs() do
+        bp.Cursor = cur
+        bp:Insert(left)
+        local x = bp.Cursor.X
+        bp:Insert(right)
+        for _ = 1, bp.Cursor.X-x do
+            bp.Cursor:Left()
+        end
+    end
+end
+
 function get_env(buf, down, loc)
     if not loc then
         loc = -buf:GetActiveCursor().Loc
@@ -547,6 +560,13 @@ function init()
         config.TryBindKey(mod..key, "command:insert '"..val.."'", false)
     end
 
+    config.MakeCommand("latex_insert_brackets", function(bp, args)
+            if #args == 2 then
+                insert_brackets(bp, args[1], args[2])
+            else
+                micro.InfoBar():Error("Wrong number of arguments")
+            end
+        end, completer({"\\bigl(", "\\Bigl(", "\\biggl(", "\\Biggl("}))
     config.MakeCommand("latex_insert_env", function(bp, args)
             for _, arg in args() do
                 insert_env(bp, arg)
