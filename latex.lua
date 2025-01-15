@@ -514,6 +514,12 @@ keys = {
     ["+"] = "\\oplus",
     ["-"] = "\\ominus",
     ["*"] = "\\otimes",
+    ["."] = "\\dots",
+    [":"] = "\\colon",
+    ["<"] = "\\langle",
+    [">"] = "\\rangle",
+    ["~"] = "\\tilde",
+    ["0"] = "\\emptyset",
 }
 
 function preinit()
