@@ -77,16 +77,20 @@ function insert_brackets(bp, left, right)
     end
 end
 
+rgrp_env = buffer.NewRegexpGroup("\\\\(begin|end){([[:alpha:]]*\\*?)}")
+
 function get_env(buf, down, loc)
     if not loc then
         loc = -buf:GetActiveCursor().Loc
     end
-    local level = 0, match, found
+    local level = 0, match
     while level >= 0 do
-        local loc1 = down and loc or buf:Start()
-        local loc2 = down and buf:End() or loc
-        match, found = buf:FindNextSubmatch("(?-i)\\\\(begin|end){([[:alpha:]]*\\*?)}", loc1, loc2, loc, down)
-        if not found then return end
+        if down then
+            match = buf:FindDownSubmatch(rgrp_env, loc, buf:End())
+        else
+            match = buf:FindUpSubmatch(rgrp_env, buf:Start(), loc)
+        end
+        if not match then return end
         local be = get_string(buf, -match[3], -match[4])
         level = level + (down and 1 or -1)*(be == "begin" and 1 or -1)
         loc = -match[down and 2 or 1]
@@ -187,8 +191,7 @@ end
 function findall_submatch(buf, regexp)
     local curloc = -buf:GetActiveCursor().Loc
     local submatches = {}
-    local matches = buf:FindAllSubmatch(regexp, buf:Start(), buf:End())
-    for _, match in matches() do
+    buf:FindAllSubmatchFunc(regexp, buf:Start(), buf:End(), function(match)
         local loc0, loc1, loc2 = -match[2], -match[3], -match[4]
         -- local j = findfirst(buf:LineBytes(loc1.Y), 37) -- string.char(37) == "%"
         if (loc0 ~= curloc) then -- and (not j or j > loc1.X) then
@@ -196,18 +199,18 @@ function findall_submatch(buf, regexp)
             local submatch = get_string(buf, loc1, loc2)
             table.insert(submatches, submatch)
         end
-    end
+    end)
     sort_unique(submatches)
     return submatches
 end
 
 function findall_macros(buf)
-    local regexp = "(?-i)\\\\([[:alpha:]]+)"
+    local regexp = "\\\\([[:alpha:]]+)"
     return findall_submatch(buf, regexp)
 end
 
 function findall_tags(buf, macro)
-    local regexp = "(?-i)\\\\"..macro.."{([^} ]+)}"
+    local regexp = "\\\\"..macro.."{([^} ]+)}"
     return findall_submatch(buf, regexp)
 end
 
@@ -225,13 +228,14 @@ function insert_bibtags(tags, bibfile)
     elseif buf:LinesNum() == 1 then
         return errors.New("file empty or non-existing")
     end
-    local matches = buf:FindAllSubmatch("^@[[:alnum:]]+{([^\"#%'(),={}]+),", buf:Start(), buf:End())
-    for _, match in matches() do
+    buf:FindAllSubmatchFunc("^@[[:alnum:]]+{([^\"#%'(),={}]+),", buf:Start(), buf:End(), function(match)
         local tag = get_string(buf, -match[3], -match[4])
         table.insert(tags, tag)
-    end
+    end)
     buf:Close()
 end
+
+rgrp_macro_arg = buffer.NewRegexpGroup("\\\\([[:alpha:]]*)((?:\\[[^]]*\\])?{[^}\\ ]*|)")
 
 function preAutocomplete(bp)
     local buf, cur = bp.Buf, bp.Cursor
@@ -240,8 +244,8 @@ function preAutocomplete(bp)
     local loc = -cur.Loc
     local macro, tags, r
 
-    local match, found = buf:FindNextSubmatch("(?-i)\\\\([[:alpha:]]*)((?:\\[[^]]*\\])?{[^}\\ ]*|)", buffer.Loc(0, loc.Y), loc, loc, false)
-    if not found or -match[2] ~= loc then return true end
+    local match = buf:FindUpSubmatch(rgrp_macro_arg, buffer.Loc(0, loc.Y), loc)
+    if not match or -match[2] ~= loc then return true end
 
     if -match[5] == -match[6] then -- macro
         r = "\\"
@@ -371,6 +375,9 @@ function log(bp)
     end
 end
 
+rgrp_stop = buffer.NewRegexpGroup("^! Emergency stop")
+rgrp_line = buffer.NewRegexpGroup("^l\\.(\\d+)")
+
 function compile(bp)
     bp:Save()
     local buf = bp.Buf
@@ -388,13 +395,13 @@ function compile(bp)
     if err then
         micro.InfoBar():Error("Error compiling ", path)
         logbp = log(bp)
-        local match, found = logbuf:FindNext("(?-i)^! Emergency stop", logbuf:Start(), logbuf:End(), logbuf:End(), false, true)
-        if found then
-            local loc = match[1]
+        local match = logbuf:FindUp(rgrp_stop, logbuf:Start(), logbuf:End())
+        if match then
+            local loc = -match[1]
             logbp:GotoLoc(loc)
             logbp:Center()
-            local match, found = logbuf:FindNextSubmatch("(?-i)^l\\.(\\d+)", loc, logbuf:End(), loc, true)
-            if found then
+            local match = logbuf:FindDownSubmatch(rgrp_line, loc, logbuf:End())
+            if match then
                 local line = get_string(logbuf, -match[3], -match[4])
                 if line-1 ~= bp.Cursor.Loc.Y then
                     bp:GotoLoc(buffer.Loc(0, line-1))
