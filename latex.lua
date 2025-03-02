@@ -240,7 +240,7 @@ function preAutocomplete(bp)
     local loc = -cur.Loc
     local macro, tags, r
 
-    match, found = buf:FindNextSubmatch("(?-i)\\\\([[:alpha:]]*)((?:\\[[^]]*\\])?{[^}\\ ]*|)", buffer.Loc(0, loc.Y), loc, loc, false)
+    local match, found = buf:FindNextSubmatch("(?-i)\\\\([[:alpha:]]*)((?:\\[[^]]*\\])?{[^}\\ ]*|)", buffer.Loc(0, loc.Y), loc, loc, false)
     if not found or -match[2] ~= loc then return true end
 
     if -match[5] == -match[6] then -- macro
