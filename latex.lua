@@ -444,7 +444,7 @@ end
 
 function onBufferOpen(buf)
     if buf:FileType() == "tex" then
-        buf.Settings["autoclose.pairs"] = {"()", "{}", "[]", "$$", "`'"}
+        buf:SetOptionNative("autoclose.pairs", {"()", "{}", "[]", "$$", "`'"})
     end
 end
 
